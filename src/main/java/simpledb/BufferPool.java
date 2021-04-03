@@ -2,6 +2,7 @@ package simpledb;
 
 import java.io.*;
 
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -19,6 +20,9 @@ public class BufferPool {
     /** Bytes per page, including header. */
     private static final int PAGE_SIZE = 4096;
 
+    private HashMap<PageId, Page> bufferContents;
+    private int maxPageNum;
+
     private static int pageSize = PAGE_SIZE;
     
     /** Default number of pages passed to the constructor. This is used by
@@ -32,7 +36,8 @@ public class BufferPool {
      * @param numPages maximum number of pages in this buffer pool.
      */
     public BufferPool(int numPages) {
-        // some code goes here
+        bufferContents = new HashMap<>();
+        maxPageNum = numPages;
     }
     
     public static int getPageSize() {
@@ -64,9 +69,10 @@ public class BufferPool {
      * @param pid the ID of the requested page
      * @param perm the requested permissions on the page
      */
-    public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
+    public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
+
         return null;
     }
 

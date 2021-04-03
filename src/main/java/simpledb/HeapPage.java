@@ -62,24 +62,15 @@ public class HeapPage implements Page {
         setBeforeImage();
     }
 
-    /** Retrieve the number of tuples on this page.
-        @return the number of tuples on this page
-    */
     private int getNumTuples() {        
-        // some code goes here
-        return 0;
-
+        return tuples.length;
     }
 
     /**
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
-     * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {        
-        
-        // some code goes here
-        return 0;
-                 
+        return header.length;
     }
     
     /** Return a view of this page before it was modified
@@ -107,12 +98,8 @@ public class HeapPage implements Page {
         }
     }
 
-    /**
-     * @return the PageId associated with this page.
-     */
     public HeapPageId getId() {
-    // some code goes here
-    throw new UnsupportedOperationException("implement this");
+        return pid;
     }
 
     /**
@@ -289,7 +276,9 @@ public class HeapPage implements Page {
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        // some code goes here
+        tuples[i].fields().forEachRemaining(f -> {
+            // f.serialize(dos);
+        });
         return false;
     }
 
@@ -306,8 +295,8 @@ public class HeapPage implements Page {
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        // some code goes here
-        return null;
+        ArrayList<Tuple> tupleArrayList = new ArrayList<>(Arrays.asList(tuples));
+        return tupleArrayList.iterator();
     }
 
 }

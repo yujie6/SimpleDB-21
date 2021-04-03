@@ -1,9 +1,6 @@
 package simpledb;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,12 +15,26 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
-    /**
-     * Constructor.
-     * Creates a new, empty catalog.
-     */
+    public static class CatalogEntry implements Serializable {
+        private static final long serialVersionUID = 1L;
+        public DbFile file;
+        public String name;
+        public String pkeyField;
+        public CatalogEntry(DbFile dbFile, String n, String p) {
+            reset(dbFile, n, p);
+        }
+
+        public void reset(DbFile dbFile, String n, String p) {
+            this.file = dbFile;
+            this.name = n;
+            this.pkeyField = p;
+        }
+    }
+
+    private ArrayList<CatalogEntry> catalogContents;
+
     public Catalog() {
-        // some code goes here
+        catalogContents = new ArrayList<>();
     }
 
     /**
@@ -36,20 +47,18 @@ public class Catalog {
      * @param pkeyField the name of the primary key field
      */
     public void addTable(DbFile file, String name, String pkeyField) {
-        // some code goes here
+        for (CatalogEntry entry : catalogContents) {
+            if (entry.name.equals(name) || file.getId() == entry.file.getId()) {
+                entry.reset(file, name, pkeyField);
+            }
+        }
+        catalogContents.add(new CatalogEntry(file, name, pkeyField));
     }
 
     public void addTable(DbFile file, String name) {
         addTable(file, name, "");
     }
 
-    /**
-     * Add a new table to the catalog.
-     * This table has tuples formatted using the specified TupleDesc and its
-     * contents are stored in the specified DbFile.
-     * @param file the contents of the table to add;  file.getId() is the identfier of
-     *    this file/tupledesc param for the calls getTupleDesc and getFile
-     */
     public void addTable(DbFile file) {
         addTable(file, (UUID.randomUUID()).toString());
     }
@@ -59,50 +68,60 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
-        // some code goes here
-        return 0;
+        for (CatalogEntry entry : catalogContents) {
+            if (entry.name.equals(name)) {
+                return entry.file.getId();
+            }
+        }
+        throw new NoSuchElementException();
     }
 
-    /**
-     * Returns the tuple descriptor (schema) of the specified table
-     * @param tableid The id of the table, as specified by the DbFile.getId()
-     *     function passed to addTable
-     * @throws NoSuchElementException if the table doesn't exist
-     */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        for (CatalogEntry entry : catalogContents) {
+            if (entry.file.getId() == tableid) {
+                return entry.file.getTupleDesc();
+            }
+        }
+        throw new NoSuchElementException();
     }
 
-    /**
-     * Returns the DbFile that can be used to read the contents of the
-     * specified table.
-     * @param tableid The id of the table, as specified by the DbFile.getId()
-     *     function passed to addTable
-     */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+        for (CatalogEntry entry : catalogContents) {
+            if (entry.file.getId() == tableid) {
+                return entry.file;
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     public String getPrimaryKey(int tableid) {
-        // some code goes here
-        return null;
+        for (CatalogEntry entry : catalogContents) {
+            if (entry.file.getId() == tableid) {
+                return entry.pkeyField;
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     public Iterator<Integer> tableIdIterator() {
-        // some code goes here
-        return null;
+        ArrayList<Integer> tableIds = new ArrayList<>();
+        for (CatalogEntry entry : catalogContents) {
+            tableIds.add(entry.file.getId());
+        }
+        return tableIds.iterator();
     }
 
     public String getTableName(int id) {
-        // some code goes here
-        return null;
+        for (CatalogEntry entry : catalogContents) {
+            if (entry.file.getId() == id) {
+                return entry.name;
+            }
+        }
+        throw new NoSuchElementException();
     }
-    
-    /** Delete all tables from the catalog */
+
     public void clear() {
-        // some code goes here
+        catalogContents.clear();
     }
     
     /**
