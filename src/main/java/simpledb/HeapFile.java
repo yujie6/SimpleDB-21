@@ -38,8 +38,7 @@ public class HeapFile implements DbFile {
      * @return an ID uniquely identifying this HeapFile.
      */
     public int getId() {
-        // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return f.getAbsoluteFile().hashCode();
     }
 
     public TupleDesc getTupleDesc() {
@@ -48,7 +47,17 @@ public class HeapFile implements DbFile {
 
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
-        return null;
+        try {
+            FileInputStream in = new FileInputStream(f);
+            byte[] data = new byte[BufferPool.getPageSize()];
+            int success = in.readNBytes(data, pid.pageNumber() * BufferPool.getPageSize(), BufferPool.getPageSize());
+            if (success == -1) System.err.println("Reaching the end of file!!");
+            in.close();
+            return new HeapPage(((HeapPageId) pid), data);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // see DbFile.java for javadocs
@@ -61,8 +70,7 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        // some code goes here
-        return 0;
+        return (int) (f.length() / BufferPool.getPageSize());
     }
 
     // see DbFile.java for javadocs
@@ -83,8 +91,7 @@ public class HeapFile implements DbFile {
 
     // see DbFile.java for javadocs
     public DbFileIterator iterator(TransactionId tid) {
-        // some code goes here
-        return null;
+        return new HeapFileIterator(this, tid);
     }
 
 }

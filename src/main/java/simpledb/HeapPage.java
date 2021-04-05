@@ -63,14 +63,14 @@ public class HeapPage implements Page {
     }
 
     private int getNumTuples() {        
-        return tuples.length;
+        return (BufferPool.getPageSize() * 8) / (td.getSize() * 8 + 1);
     }
 
     /**
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {        
-        return header.length;
+        return (int) Math.ceil(numSlots / 8.0);
     }
     
     /** Return a view of this page before it was modified
@@ -268,26 +268,42 @@ public class HeapPage implements Page {
      * Returns the number of empty slots on this page.
      */
     public int getNumEmptySlots() {
-        // some code goes here
-        return 0;
+        int numUsed = 0;
+        for (int i = 0; i < numSlots; i++) {
+            numUsed += getBit(header, i);
+        }
+        return numSlots - numUsed;
+    }
+
+    private static int getBit(byte[] data, int pos) {
+        int posByte = pos/8;
+        int posBit = pos%8;
+        byte valByte = data[posByte];
+        return valByte>>(posBit) & 0x0001;
+    }
+
+    private static void modifyBit(byte[] data, int pos, int value) {
+        int posByte = pos/8;
+        int posBit = pos%8;
+        int originalBit = data[posByte]>>(posBit) & 0x0001;
+        if (originalBit == value) return;
+        data[posByte] ^= (1 << posBit);
     }
 
     /**
      * Returns true if associated slot on this page is filled.
      */
     public boolean isSlotUsed(int i) {
-        tuples[i].fields().forEachRemaining(f -> {
-            // f.serialize(dos);
-        });
-        return false;
+        int bit = getBit(header, i);
+        return bit != 0;
     }
 
     /**
      * Abstraction to fill or clear a slot on this page.
      */
     private void markSlotUsed(int i, boolean value) {
-        // some code goes here
-        // not necessary for lab1
+        int val = value ? 1 : 0;
+        modifyBit(header, i, val);
     }
 
     /**
@@ -295,7 +311,10 @@ public class HeapPage implements Page {
      * (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
-        ArrayList<Tuple> tupleArrayList = new ArrayList<>(Arrays.asList(tuples));
+        ArrayList<Tuple> tupleArrayList = new ArrayList<>();
+        for (int i = 0; i < numSlots; i++) {
+            if (getBit(header, i) == 1) tupleArrayList.add(tuples[i]);
+        }
         return tupleArrayList.iterator();
     }
 
