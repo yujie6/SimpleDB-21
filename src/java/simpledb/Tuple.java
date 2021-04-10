@@ -19,7 +19,7 @@ public class Tuple implements Serializable {
 
     public Tuple(TupleDesc td) {
         tupleContents = new ArrayList<>();
-        tupleContents.addAll(Arrays.asList(new Field[2]));
+        tupleContents.addAll(Arrays.asList(new Field[td.numFields()]));
         this.td = td;
     }
 

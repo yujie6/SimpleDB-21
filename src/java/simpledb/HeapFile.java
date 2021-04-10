@@ -48,13 +48,15 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
         try {
+            if (pid.pageNumber() >= numPages()) throw new DbException("Read page invalid!");
             FileInputStream in = new FileInputStream(f);
-            byte[] data = new byte[BufferPool.getPageSize()];
-            int success = in.readNBytes(data, pid.pageNumber() * BufferPool.getPageSize(), BufferPool.getPageSize());
-            if (success == -1) System.err.println("Reaching the end of file!!");
+            in.skip(pid.pageNumber() * BufferPool.getPageSize());
+            byte[] data = new byte[BufferPool.getPageSize() + 23];
+            int success = in.readNBytes(data, 0, BufferPool.getPageSize());
+            if (success == -1) System.out.println("Reaching the end of file!!");
             in.close();
             return new HeapPage(((HeapPageId) pid), data);
-        } catch (IOException e) {
+        } catch (IOException | DbException e) {
             e.printStackTrace();
             return null;
         }
@@ -70,7 +72,7 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        return (int) (f.length() / BufferPool.getPageSize());
+        return (int) Math.ceil(f.length() / (BufferPool.getPageSize() + 0.0));
     }
 
     // see DbFile.java for javadocs

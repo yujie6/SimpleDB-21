@@ -70,6 +70,13 @@ public class TupleDesc implements Serializable {
         }
     }
 
+    public TupleDesc(TupleDesc other, String prefix) {
+        tdContents = new ArrayList<>();
+        for (int i = 0; i < other.numFields(); i++) {
+            tdContents.add(new TDItem(other.getFieldType(i), prefix + "." + other.getFieldName(i)));
+        }
+    }
+
     public TupleDesc(ArrayList<TDItem> itemList) {
         tdContents = new ArrayList<>();
         tdContents.addAll(itemList);

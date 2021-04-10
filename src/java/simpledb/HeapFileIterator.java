@@ -44,6 +44,10 @@ public class HeapFileIterator implements DbFileIterator {
         if (iterator.hasNext()) return iterator.next();
         else {
             curPageId++;
+            if (curPageId >= heapFile.numPages()) {
+                throw new NoSuchElementException();
+            }
+            // System.out.println(curPageId + "<read new page>, " + heapFile.numPages());
             HeapPageId pid = new HeapPageId(heapFile.getId(), curPageId);
             try {
                 heapPage = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
