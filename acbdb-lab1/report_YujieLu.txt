@@ -1,0 +1,11 @@
+#  Design Decisions
+* I use `ArrayList.iterator()` to generate `HeapPage`'s iterator.
+* Use `HashMap` to store buffered pages.
+
+# How long I spent
+I spent about 8 hours, and I used half of the time debugging the last test.
+One confusing part is the usage of `readNBytes` in java, the offset is not about the file's offset
+but the target's offset. And we should use `skip()` to adjust file's offset, it took me quite some time
+to find out.
+
+Another confusing part is the `AbastractDbFileIterator.java`, actually I didn't use it.
