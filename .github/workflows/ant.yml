@@ -21,8 +21,12 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - name: Build with Ant
+    - name: Test lab1
       run: | 
         cd acmdb-lab1
         ant test
         ant systemtest
+    - name: Test lab2
+      run: |
+        cd acmdb-lab2
+        ant
