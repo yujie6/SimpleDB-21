@@ -22,7 +22,7 @@ jobs:
         java-version: '11'
         distribution: 'adopt'
     - name: Build with Ant
-      working-directory: ./acmdb-lab1
       run: | 
+        cd acmdb-lab1
         ant test
         ant systemtest

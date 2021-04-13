@@ -3,7 +3,8 @@ gradle
 .idea
 # Compiled class file
 *.class
-
+bin
+dist
 # Log file
 *.log
 
@@ -14,7 +15,6 @@ gradle
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.nar
 *.ear
