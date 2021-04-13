@@ -1,79 +1,17 @@
-name: Issues Helper
-  # You may pin to the exact commit or the version.
-  # uses: actions-cool/issues-helper@d82909b31d2bf2ebfc74306b249ef7060169ebc5
-  uses: actions-cool/issues-helper@v2.2.1
-  with:
-    # Action name
-    actions: # optional
-    # Github_token
-    token: # optional, default is ${{ github.token }}
-    # Issue-number
-    issue-number: # optional
-    # Comment-id
-    comment-id: # optional
-    # Issue body
-    body: # optional
-    # Issue title
-    title: # optional
-    # Issue assignees
-    assignees: # optional
-    # Issue assignees random to
-    random-to: # optional
-    # Issue labels
-    labels: # optional
-    # Create label name
-    label-name: # optional
-    # Create label color, default #ededed
-    label-color: # optional
-    # Create label description
-    label-desc: # optional
-    # Issue state
-    state: # optional
-    # Body update mode
-    update-mode: # optional
-    # Issue reactions emoji
-    contents: # optional
-    # Find comments direction
-    direction: # optional
-    # Find comments query auth
-    comment-auth: # optional
-    # Find comments out comments
-    out-comments: # optional
-    # Check use
-    assignee-includes: # optional
-    # Query use
-    body-includes: # optional
-    # Remove some to check title whether empty.
-    title-excludes: # optional
-    # Query use
-    title-includes: # optional
-    # Query use
-    issue-creator: # optional
-    # Query use
-    issue-assignee: # optional
-    # Query use
-    issue-mentioned: # optional
-    # For welcome
-    issue-contents: # optional
-    # Query use
-    issue-state: # optional
-    # Query use
-    inactive-day: # optional
-    # The reason lock issue
-    lock-reason: # optional
-    # Issue label set use
-    inactive-label: # optional
-    # For mark-duplicate
-    duplicate-command: # optional
-    # For mark-duplicate add labels
-    duplicate-labels: # optional
-    # Only the allow can do. Possible admin, write, read, and none.
-    require-permission: # optional
-    # For remove labels
-    remove-labels: # optional
-    # For mark-duplicate
-    close-issue: # optional
-    # For month-statistics
-    count-lables: # optional
-    # For month-statistics
-    count-comments: # optional
+name: Greetings
+
+on: [pull_request, issues]
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Issue comment
+      # You may pin to the exact commit or the version.
+      # uses: kyoncy/issue-comment-actions@1b1e351bee044874171a5dc99598257425f6272c
+      uses: kyoncy/issue-comment-actions@v1
+      with:
+        # GitHub token for use by this action.
+        token: ${{ github.token }} # optional, default is 
+        # Message
+        message: "Thank you for opening the issue!" # optional, default is 
