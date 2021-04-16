@@ -21,6 +21,7 @@ public class BufferPool {
     private static final int PAGE_SIZE = 4096;
 
     private HashMap<PageId, Page> bufferContents;
+    private HashMap<PageId, Integer> pageUseTime;
     private int maxPageNum;
 
     private static int pageSize = PAGE_SIZE;
@@ -37,6 +38,7 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         bufferContents = new HashMap<>();
+        pageUseTime = new HashMap<>();
         maxPageNum = numPages;
     }
     
@@ -73,11 +75,20 @@ public class BufferPool {
         throws TransactionAbortedException, DbException {
         // some code goes here
         if (bufferContents.containsKey(pid)) {
+            pageUseTime.replace(pid, pageUseTime.get(pid) + 1);
             return bufferContents.get(pid);
         } else {
-            HeapFile hf = (HeapFile) Database.getCatalog().getDatabaseFile(pid.getTableId());
+            DbFile hf = Database.getCatalog().getDatabaseFile(pid.getTableId());
             Page newPage = hf.readPage(pid);
             bufferContents.put(pid, newPage);
+            pageUseTime.put(pid, 1);
+            if (bufferContents.size() == maxPageNum + 1) {
+                try {
+                    evictPage();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
             return newPage;
         }
     }
@@ -172,9 +183,9 @@ public class BufferPool {
      *     break simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        // some code goes here
-        // not necessary for lab1
-
+        for (PageId pid : bufferContents.keySet()) {
+            flushPage(pid);
+        }
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -197,22 +208,44 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
+        Page dirtyPage = bufferContents.get(pid);
+        TransactionId lastTransaction = dirtyPage.isDirty();
+        if (lastTransaction != null) {
+            dirtyPage.markDirty(false, lastTransaction);
+
+        }
     }
 
     /** Write all pages of the specified transaction to disk.
      */
     public synchronized  void flushPages(TransactionId tid) throws IOException {
-        // some code goes here
-        // not necessary for lab1|lab2
+
+    }
+
+    private PageId getLeastUsedPID() {
+        int minVal = 1000000;
+        PageId target = pageUseTime.keySet().iterator().next();
+        for (PageId pid : pageUseTime.keySet()) {
+            if (pageUseTime.get(pid) < minVal) {
+                minVal = pageUseTime.get(pid);
+                target = pid;
+            }
+        }
+        return target;
     }
 
     /**
      * Discards a page from the buffer pool.
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
-    private synchronized  void evictPage() throws DbException {
-        // some code goes here
-        // not necessary for lab1
+    private synchronized void evictPage() throws DbException, IOException {
+        // Use LRU
+        PageId removeID = getLeastUsedPID();
+        if (bufferContents.get(removeID).isDirty() != null) {
+            flushPage(removeID);
+        }
+        bufferContents.remove(removeID);
+        pageUseTime.remove(removeID);
     }
 
 }

@@ -235,6 +235,7 @@ public class BTreeScanTest extends SimpleDbTestBase {
         BTreeScan scan = new BTreeScan(tid, f.getId(), "table", ipred);
         SystemTestUtil.matchTuples(scan, tuplesFiltered);
         // root pointer page + root + leaf page (possibly 2 leaf pages)
+        System.out.println("read " + table.readCount);
         assertTrue(table.readCount == 3 || table.readCount == 4);
         
         // LESS_THAN
