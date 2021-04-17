@@ -1,7 +1,9 @@
 package simpledb;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -154,8 +156,12 @@ public class BufferPool {
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        // not necessary for lab1
+        BTreeFile bTreeFile = (BTreeFile) Database.getCatalog().getDatabaseFile(tableId);
+        ArrayList<Page> dirtyPages = bTreeFile.insertTuple(tid, t);
+        for (Page page : dirtyPages) {
+            page.markDirty(true, tid);
+            bufferContents.replace(page.getId(), page);
+        }
     }
 
     /**

@@ -262,16 +262,45 @@ public class BTreeFile implements DbFile {
      */
     protected BTreeLeafPage splitLeafPage(TransactionId tid, HashMap<PageId, Page> dirtypages, BTreeLeafPage page, Field field)
             throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        //
         // Split the leaf page by adding a new page on the right of the existing
         // page and moving half of the tuples to the new page.  Copy the middle key up
         // into the parent page, and recursively split the parent as needed to accommodate
         // the new entry.  getParentWithEmtpySlots() will be useful here.  Don't forget to update
         // the sibling pointers of all the affected leaf pages.  Return the page into which a
         // tuple with the given key field should be inserted.
-        return null;
-
+        BTreeLeafPage sibling = (BTreeLeafPage) getEmptyPage(tid, dirtypages, BTreePageId.LEAF);
+        // split parent if necessary
+        BTreeInternalPage parent = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), field);
+        // move tuples to sibling
+        Iterator<Tuple> removeIterator = page.reverseIterator();
+        while (removeIterator.hasNext()) {
+            Tuple removedTuple = removeIterator.next();
+            page.deleteTuple(removedTuple);
+            sibling.insertTuple(removedTuple);
+            if (sibling.getNumTuples() == sibling.getMaxTuples() / 2) break;
+        }
+        // update pointers
+        if (page.getRightSiblingId() != null) {
+            BTreeLeafPage originalRight = (BTreeLeafPage) getPage(tid, dirtypages, page.getRightSiblingId(), Permissions.READ_ONLY);
+            originalRight.setLeftSiblingId(sibling.getId());
+            sibling.setRightSiblingId(originalRight.getId());
+            dirtypages.replace(originalRight.pid, originalRight);
+        }
+        sibling.setLeftSiblingId(page.getId());
+        sibling.setParentId(parent.getId());
+        page.setRightSiblingId(sibling.getId());
+        // update parent entry
+        Field entryKey = sibling.getTuple(0).getField(keyField);
+        BTreeEntry newEntry = new BTreeEntry(entryKey, page.getId(), sibling.getId());
+        updateParentPointer(tid, dirtypages, parent.pid, sibling.pid);
+        parent.insertEntry(newEntry);
+        parent.updateEntry(newEntry);
+        // update dirty pages
+        dirtypages.put(sibling.pid, sibling);
+        dirtypages.replace(page.pid, page);
+        if (sibling.getTuple(0).getField(keyField).compare(Op.GREATER_THAN, field)) {
+            return page;
+        } else return sibling;
     }
 
     /**
@@ -298,8 +327,32 @@ public class BTreeFile implements DbFile {
     protected BTreeInternalPage splitInternalPage(TransactionId tid, HashMap<PageId, Page> dirtypages,
                                                   BTreeInternalPage page, Field field)
             throws DbException, IOException, TransactionAbortedException {
-        // some code goes here
-        return null;
+        BTreeInternalPage sibling = (BTreeInternalPage) getEmptyPage(tid, dirtypages, BTreePageId.INTERNAL);
+        BTreeInternalPage parent = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), field);
+        // move entries from page to sibling
+        Iterator<BTreeEntry> removeIterator = page.reverseIterator();
+        Field middleKey = null;
+        while (removeIterator.hasNext()) {
+            BTreeEntry entry = removeIterator.next();
+            page.deleteKeyAndRightChild(entry);
+
+            if (sibling.getNumEntries() == sibling.getMaxEntries() / 2) {
+                middleKey = entry.getKey();
+                break;
+            }
+            sibling.insertEntry(entry);
+            sibling.updateEntry(entry);
+        }
+        updateParentPointers(tid, dirtypages, sibling);
+        // update pointers
+        sibling.setParentId(parent.pid);
+        // push the middle key to parent's entry list
+        BTreeEntry newEntry = new BTreeEntry(middleKey, page.pid, sibling.pid);
+        parent.insertEntry(newEntry);
+        parent.updateEntry(newEntry);
+        if (field.compare(Op.LESS_THAN, sibling.getKey(1))) {
+            return page;
+        } else return sibling;
     }
 
     /**
