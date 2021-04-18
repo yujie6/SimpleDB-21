@@ -837,7 +837,13 @@ public class BTreeFile implements DbFile {
 
         }
         leftPage.setRightSiblingId(null);
+        if (rightPage.getRightSiblingId() != null) {
+            BTreeLeafPage rightRightPage = (BTreeLeafPage) getPage(tid, dirtypages, rightPage.getRightSiblingId(), Permissions.READ_WRITE);
+            leftPage.setRightSiblingId(rightRightPage.getId());
+            rightRightPage.setLeftSiblingId(leftPage.getId());
+        }
         rightPage.setLeftSiblingId(null);
+        rightPage.setRightSiblingId(null);
 
         deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
         setEmptyPage(tid, dirtypages, rightPage.pid.pageNumber());
@@ -872,7 +878,6 @@ public class BTreeFile implements DbFile {
         // deleteParentEntry() will be useful here
         Iterator<BTreeEntry> mergeIterator = rightPage.iterator();
         Field pulledKey = parentEntry.getKey();
-        Field pushedKey = null;
         BTreeEntry middleEntry = new BTreeEntry(pulledKey, leftPage.reverseIterator().next().getRightChild(),
                 rightPage.iterator().next().getLeftChild());
         leftPage.insertEntry(middleEntry);
@@ -883,6 +888,7 @@ public class BTreeFile implements DbFile {
             leftPage.insertEntry(mergedEntry);
             leftPage.updateEntry(mergedEntry);
         }
+        assert (rightPage.getNumEntries() == 0);
         updateParentPointers(tid, dirtypages, leftPage);
         setEmptyPage(tid, dirtypages, rightPage.pid.pageNumber());
         deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
