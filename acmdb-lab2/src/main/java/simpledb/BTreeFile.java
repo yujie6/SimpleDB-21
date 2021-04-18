@@ -790,7 +790,7 @@ public class BTreeFile implements DbFile {
         page.updateEntry(middleEntry);
         while (stealIterator.hasNext()) {
             BTreeEntry entry = stealIterator.next();
-            rightSibling.deleteKeyAndRightChild(entry);
+            rightSibling.deleteKeyAndLeftChild(entry);
             if (page.getNumEntries() == totalEntryNum / 2) {
                 pushedKey = entry.getKey();
                 break;
