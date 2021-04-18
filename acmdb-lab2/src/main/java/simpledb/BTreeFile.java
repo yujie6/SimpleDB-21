@@ -825,13 +825,22 @@ public class BTreeFile implements DbFile {
     protected void mergeLeafPages(TransactionId tid, HashMap<PageId, Page> dirtypages,
                                   BTreeLeafPage leftPage, BTreeLeafPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry)
             throws DbException, IOException, TransactionAbortedException {
-
-        // some code goes here
-        //
         // Move all the tuples from the right page to the left page, update
         // the sibling pointers, and make the right page available for reuse.
         // Delete the entry in the parent corresponding to the two pages that are merging -
         // deleteParentEntry() will be useful here
+        Iterator<Tuple> mergeIterator = rightPage.iterator();
+        while (mergeIterator.hasNext()) {
+            Tuple mergedTuple = mergeIterator.next();
+            rightPage.deleteTuple(mergedTuple);
+            leftPage.insertTuple(mergedTuple);
+
+        }
+        leftPage.setRightSiblingId(null);
+        rightPage.setLeftSiblingId(null);
+
+        deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
+        setEmptyPage(tid, dirtypages, rightPage.pid.pageNumber());
     }
 
     /**
@@ -856,14 +865,27 @@ public class BTreeFile implements DbFile {
     protected void mergeInternalPages(TransactionId tid, HashMap<PageId, Page> dirtypages,
                                       BTreeInternalPage leftPage, BTreeInternalPage rightPage, BTreeInternalPage parent, BTreeEntry parentEntry)
             throws DbException, IOException, TransactionAbortedException {
-
-        // some code goes here
-        //
         // Move all the entries from the right page to the left page, update
         // the parent pointers of the children in the entries that were moved,
         // and make the right page available for reuse
         // Delete the entry in the parent corresponding to the two pages that are merging -
         // deleteParentEntry() will be useful here
+        Iterator<BTreeEntry> mergeIterator = rightPage.iterator();
+        Field pulledKey = parentEntry.getKey();
+        Field pushedKey = null;
+        BTreeEntry middleEntry = new BTreeEntry(pulledKey, leftPage.reverseIterator().next().getRightChild(),
+                rightPage.iterator().next().getLeftChild());
+        leftPage.insertEntry(middleEntry);
+        leftPage.updateEntry(middleEntry);
+        while (mergeIterator.hasNext()) {
+            BTreeEntry mergedEntry = mergeIterator.next();
+            rightPage.deleteKeyAndLeftChild(mergedEntry);
+            leftPage.insertEntry(mergedEntry);
+            leftPage.updateEntry(mergedEntry);
+        }
+        updateParentPointers(tid, dirtypages, leftPage);
+        setEmptyPage(tid, dirtypages, rightPage.pid.pageNumber());
+        deleteParentEntry(tid, dirtypages, leftPage, parent, parentEntry);
     }
 
     /**
