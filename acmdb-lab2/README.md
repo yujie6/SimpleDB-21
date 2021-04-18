@@ -1,8 +1,14 @@
-# Lab 1 Document
+# Lab 2 Document
 ## Design Decisions
-* I use `ArrayList.iterator()` to generate `HeapPage`'s iterator.
-* Use `HashMap` to store buffered pages.
-* Use `InputFileStream` to access file.
+* Page replacement policy: choose the page which is queried the 
+least frequently. To achieve this, I maintained a table 
+`pageUseTime` which record how many times each page has been
+accessed.
+* Insertion: just take care of the update of pointers, especially
+sibling and parent. And remember to update entry of parent. 
+* Deletion: the merge part requires the deletion of 
+merged page. And use the method `deleteParentEntry`
+to recursively merge parent pages if necessary.
 
 ## API Changes
 Nope
@@ -11,8 +17,5 @@ Nope
 Nope
 
 ## How long I spent
-I spent about 2 days, and I used half of the time debugging the last test.
-One confusing part is the usage of `readNBytes` in java, the offset is not about the file's offset
-but the target's offset. And we should use `skip()` to adjust file's offset, it took me quite some time
-to find out. Other parts are quite easy.
+I spent about 3 days (2 hours per day), and there aren't anything confusing, I found it quite clear after reading the docs
 
