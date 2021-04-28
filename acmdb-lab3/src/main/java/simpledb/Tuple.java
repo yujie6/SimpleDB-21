@@ -64,6 +64,14 @@ public class Tuple implements Serializable {
         return tupleContents.iterator();
     }
 
+    public static Tuple merge(TupleDesc td, Tuple t1, Tuple t2) {
+        Tuple merged = new Tuple(td);
+        merged.tupleContents.clear();
+        merged.tupleContents.addAll(t1.tupleContents);
+        merged.tupleContents.addAll(t2.tupleContents);
+        return merged;
+    }
+
     public void resetTupleDesc(TupleDesc td) {
         this.td = td;
     }
