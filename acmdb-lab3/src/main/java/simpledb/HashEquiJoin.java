@@ -12,6 +12,8 @@ public class HashEquiJoin extends Operator {
     private DbIterator child1, child2;
     private TupleDesc mergedTD;
     private Tuple t1, t2;
+    private ArrayList<Tuple> joinedArray;
+    private Iterator<Tuple> joinedIterator;
     /**
      * Constructor. Accepts to children to join and the predicate to join them
      * on
@@ -48,15 +50,34 @@ public class HashEquiJoin extends Operator {
         super.open();
         child1.open();
         child2.open();
+        joinedArray = new ArrayList<>();
+        ArrayList<Tuple> tmp = new ArrayList<>();
+        while (child1.hasNext()) {
+            tmp.add(child1.next());
+        }
+        while (child2.hasNext()) {
+            Tuple t2 = child2.next();
+            for (Tuple t : tmp) {
+                if (jp.filter(t, t2)) {
+                    joinedArray.add(Tuple.merge(mergedTD, t, t2));
+                }
+            }
+        }
+        joinedIterator = joinedArray.iterator();
     }
 
     public void close() {
+        this.child1.close();
+        this.child2.close();
+
         super.close();
+
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         child1.rewind();
         child2.rewind();
+        joinedIterator = joinedArray.iterator();
         t1 = null;
         t2 = null;
     }
@@ -82,7 +103,11 @@ public class HashEquiJoin extends Operator {
      * @see JoinPredicate#filter
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        if (t1 == null && t2 == null) {
+        if (joinedIterator.hasNext()) {
+            return joinedIterator.next();
+        }
+        return null;
+        /*if (t1 == null && t2 == null) {
             t1 = child1.next();
             t2 = child2.next();
             if (jp.filter(t1, t2)) return Tuple.merge(mergedTD, t1, t2);
@@ -99,18 +124,21 @@ public class HashEquiJoin extends Operator {
                     if (jp.filter(t1, t2)) return Tuple.merge(mergedTD, t1, t2);
                 } else return null;
             }
-        }
+        }*/
     }
 
     @Override
     public DbIterator[] getChildren() {
-        // some code goes here
-        return null;
+        DbIterator[] children = new DbIterator[2];
+        children[0] = child1;
+        children[1] = child2;
+        return children;
     }
 
     @Override
     public void setChildren(DbIterator[] children) {
-        // some code goes here
+        this.child1 = children[0];
+        this.child2 = children[1];
     }
 
 }

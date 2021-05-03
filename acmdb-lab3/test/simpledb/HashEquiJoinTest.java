@@ -118,8 +118,6 @@ public class HashEquiJoinTest extends SimpleDbTestBase {
         joinOp.close();
         Database.getBufferPool().transactionComplete(tid);
         int expected = (table1ColumnValue == table2ColumnValue)?(table1Rows*table2Rows):0;
-        System.out.println("JOIN PRODUCED " + cnt + " ROWS");
-        System.out.println("JOIN Expected " + expected + " ROWS");
         assert(cnt == expected);
     }
 
