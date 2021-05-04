@@ -55,6 +55,7 @@ public class Aggregate extends Operator {
      *         null;
      * */
     public String groupFieldName() {
+        if (gfield == -1) return null;
         return child.getTupleDesc().getFieldName(gfield);
     }
 
@@ -86,9 +87,11 @@ public class Aggregate extends Operator {
 
     public void open() throws NoSuchElementException, DbException,
 	    TransactionAbortedException {
+        child.open();
 	    switch (child.getTupleDesc().getFieldType(afield)) {
             case INT_TYPE: {
-                aggResult = new IntegerAggregator(gfield, child.getTupleDesc().getFieldType(gfield),
+                if (gfield == Aggregator.NO_GROUPING) aggResult = new IntegerAggregator(gfield, null, afield, aop);
+                else aggResult = new IntegerAggregator(gfield, child.getTupleDesc().getFieldType(gfield),
                         afield, aop);
 	            break;
             }

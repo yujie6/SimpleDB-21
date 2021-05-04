@@ -47,6 +47,14 @@ public class IntegerAggregator implements Aggregator {
      * @param tup the Tuple containing an aggregate field and a group-by field
      */
     public void mergeTupleIntoGroup(Tuple tup) {
+        if (gbField == Aggregator.NO_GROUPING) {
+            if (aggMap.isEmpty()) {
+                aggMap.put(new IntField(-1), new ArrayList<>(List.of(tup.getField(aField))));
+            } else {
+                aggMap.get(new IntField(-1)).add(tup.getField(aField));
+            }
+            return;
+        }
         Field gVal = tup.getField(gbField);
         gbFieldName = tup.getTupleDesc().getFieldName(gbField);
         if (!aggMap.containsKey(gVal)) {
@@ -66,73 +74,135 @@ public class IntegerAggregator implements Aggregator {
      */
     public DbIterator iterator() {
         aggResult.clear();
-
-        TupleDesc td = new TupleDesc(new Type[]{gbFieldType, Type.INT_TYPE},
-                new String[]{gbFieldName, "AggregateResult"});
+        TupleDesc td = null;
+        if (gbField == Aggregator.NO_GROUPING) {
+            td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{"AggregateResult"});
+        }
+        else td = new TupleDesc(new Type[]{gbFieldType, Type.INT_TYPE}, new String[]{gbFieldName, "AggregateResult"});
         switch (what) {
             case MAX: {
-                aggMap.forEach((gval, gList) -> {
+                if (gbField == Aggregator.NO_GROUPING) {
                     int ans = (int) -1e8;
-                    for (Field i : gList) {
-                        ans = Math.max(ans, ((IntField) i).getValue());
+                    ArrayList<Field> valList = aggMap.get(new IntField(-1));
+                    for (Field i : valList) {
+                        ans = Math.max(((IntField) i).getValue(), ans);
                     }
-                    Tuple aggTuple = new Tuple(td);
-                    aggTuple.setField(0, gval);
-                    aggTuple.setField(1, new IntField(ans));
+                    Tuple aggTuple = new Tuple (td);
+                    aggTuple.setField(0, new IntField(ans));
                     aggResult.add(aggTuple);
-                });
+                } else {
+                    TupleDesc finalTd = td;
+                    aggMap.forEach((gval, gList) -> {
+                        int ans = (int) -1e8;
+                        for (Field i : gList) {
+                            ans = Math.max(ans, ((IntField) i).getValue());
+                        }
+                        Tuple aggTuple = new Tuple(finalTd);
+                        aggTuple.setField(0, gval);
+                        aggTuple.setField(1, new IntField(ans));
+                        aggResult.add(aggTuple);
+                    });
+                }
                 break;
             }
             case MIN: {
-                aggMap.forEach((gval, gList) -> {
+                if (gbField == Aggregator.NO_GROUPING) {
                     int ans = (int) 1e8;
-                    for (Field i : gList) {
-                        ans = Math.min(ans, ((IntField) i).getValue());
+                    ArrayList<Field> valList = aggMap.get(new IntField(-1));
+                    for (Field i : valList) {
+                        ans = Math.min(((IntField) i).getValue(), ans);
                     }
-                    Tuple aggTuple = new Tuple(td);
-                    aggTuple.setField(0, gval);
-                    aggTuple.setField(1, new IntField(ans));
+                    Tuple aggTuple = new Tuple (td);
+                    aggTuple.setField(0, new IntField(ans));
                     aggResult.add(aggTuple);
-                });
+
+                } else {
+                    TupleDesc finalTd1 = td;
+                    aggMap.forEach((gval, gList) -> {
+                        int ans = (int) 1e8;
+                        for (Field i : gList) {
+                            ans = Math.min(ans, ((IntField) i).getValue());
+                        }
+                        Tuple aggTuple = new Tuple(finalTd1);
+                        aggTuple.setField(0, gval);
+                        aggTuple.setField(1, new IntField(ans));
+                        aggResult.add(aggTuple);
+                    });
+                }
                 break;
             }
             case SUM: {
-                aggMap.forEach((gval, gList) -> {
+                if (gbField == Aggregator.NO_GROUPING) {
                     int sum = 0;
-                    for (Field i : gList) {
+                    ArrayList<Field> valList = aggMap.get(new IntField(-1));
+                    for (Field i : valList) {
                         sum += ((IntField) i).getValue();
                     }
                     Tuple aggTuple = new Tuple(td);
-                    aggTuple.setField(0, gval);
-                    aggTuple.setField(1, new IntField(sum));
+                    aggTuple.setField(0, new IntField(sum));
                     aggResult.add(aggTuple);
-                });
+                } else {
+                    TupleDesc finalTd2 = td;
+                    aggMap.forEach((gval, gList) -> {
+                        int sum = 0;
+                        for (Field i : gList) {
+                            sum += ((IntField) i).getValue();
+                        }
+                        Tuple aggTuple = new Tuple(finalTd2);
+                        aggTuple.setField(0, gval);
+                        aggTuple.setField(1, new IntField(sum));
+                        aggResult.add(aggTuple);
+                    });
+                }
                 break;
             }
             case COUNT: {
-                aggMap.forEach((gval, gList) -> {
-                    IntField aggValue = new IntField(gList.size());
-                    Tuple aggTuple = new Tuple(td);
-                    aggTuple.setField(0, gval);
-                    aggTuple.setField(1, aggValue);
+                if (gbField == Aggregator.NO_GROUPING) {
+                    ArrayList<Field> valList = aggMap.get(new IntField(-1));
+                    int ans = valList.size();
+                    Tuple aggTuple = new Tuple (td);
+                    aggTuple.setField(0, new IntField(ans));
                     aggResult.add(aggTuple);
-                });
+
+                } else {
+                    TupleDesc finalTd3 = td;
+                    aggMap.forEach((gval, gList) -> {
+                        IntField aggValue = new IntField(gList.size());
+                        Tuple aggTuple = new Tuple(finalTd3);
+                        aggTuple.setField(0, gval);
+                        aggTuple.setField(1, aggValue);
+                        aggResult.add(aggTuple);
+                    });
+                }
                 break;
             }
             case SUM_COUNT: {
                 break;
             }
             case AVG: {
-                aggMap.forEach((gval, gList) -> {
+                if (gbField == Aggregator.NO_GROUPING) {
                     int sum = 0;
-                    for (Field i : gList) {
+                    ArrayList<Field> valList = aggMap.get(new IntField(-1));
+                    for (Field i : valList) {
                         sum += ((IntField) i).getValue();
                     }
+                    int avg = sum / valList.size();
                     Tuple aggTuple = new Tuple(td);
-                    aggTuple.setField(0, gval);
-                    aggTuple.setField(1, new IntField(sum / gList.size()));
+                    aggTuple.setField(0, new IntField(avg));
                     aggResult.add(aggTuple);
-                });
+                } else {
+                    TupleDesc finalTd4 = td;
+                    aggMap.forEach((gval, gList) -> {
+                        int sum = 0;
+                        for (Field i : gList) {
+                            sum += ((IntField) i).getValue();
+                        }
+                        Tuple aggTuple = new Tuple(finalTd4);
+                        aggTuple.setField(0, gval);
+                        aggTuple.setField(1, new IntField(sum / gList.size()));
+                        aggResult.add(aggTuple);
+                    });
+                }
             }
             case SC_AVG: {
                 break;
