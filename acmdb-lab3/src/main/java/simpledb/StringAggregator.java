@@ -1,5 +1,9 @@
 package simpledb;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 /**
  * Knows how to compute some aggregate over a set of StringFields.
  */
@@ -16,8 +20,19 @@ public class StringAggregator implements Aggregator {
      * @throws IllegalArgumentException if what != COUNT
      */
 
+    private int gbField, aField;
+    private Type gbFieldType;
+    private Op what;
+    private String gbFieldName;
+    private ArrayList<Tuple> aggResult;
+    private HashMap<Field, ArrayList<Field>> aggMap;
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
-        // some code goes here
+        this.gbField = gbfield;
+        this.gbFieldType = gbfieldtype;
+        this.what = what;
+        this.aField = afield;
+        this.aggResult = new ArrayList<>();
+        this.aggMap = new HashMap<>();
     }
 
     /**
@@ -25,7 +40,13 @@ public class StringAggregator implements Aggregator {
      * @param tup the Tuple containing an aggregate field and a group-by field
      */
     public void mergeTupleIntoGroup(Tuple tup) {
-        // some code goes here
+        Field gVal = tup.getField(gbField);
+        gbFieldName = tup.getTupleDesc().getFieldName(gbField);
+        if (!aggMap.containsKey(gVal)) {
+            aggMap.put(gVal, new ArrayList<>(List.of(tup.getField(aField))));
+        } else {
+            aggMap.get(gVal).add(tup.getField(aField));
+        }
     }
 
     /**
@@ -37,8 +58,24 @@ public class StringAggregator implements Aggregator {
      *   aggregate specified in the constructor.
      */
     public DbIterator iterator() {
-        // some code goes here
-        throw new UnsupportedOperationException("please implement me for lab3");
+        switch (what) {
+            case COUNT: {
+                TupleDesc td = new TupleDesc(new Type[]{gbFieldType, Type.INT_TYPE},
+                        new String[]{gbFieldName, "CountResult"});
+                aggMap.forEach((gval, gList) -> {
+                    IntField aggValue = new IntField(gList.size());
+                    Tuple aggTuple = new Tuple(td);
+                    aggTuple.setField(0, gval);
+                    aggTuple.setField(1, aggValue);
+                    aggResult.add(aggTuple);
+                });
+                return new TupleIterator(td, aggResult);
+            }
+            default: {
+                System.err.print("Not implemented agg op");
+                return null;
+            }
+        }
     }
 
 }
