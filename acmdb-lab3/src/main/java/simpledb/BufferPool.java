@@ -156,7 +156,7 @@ public class BufferPool {
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
-        BTreeFile bTreeFile = (BTreeFile) Database.getCatalog().getDatabaseFile(tableId);
+        DbFile bTreeFile = Database.getCatalog().getDatabaseFile(tableId);
         ArrayList<Page> dirtyPages = bTreeFile.insertTuple(tid, t);
         for (Page page : dirtyPages) {
             page.markDirty(true, tid);
@@ -180,7 +180,7 @@ public class BufferPool {
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         int tableId = t.getRecordId().getPageId().getTableId();
-        BTreeFile bTreeFile = (BTreeFile) Database.getCatalog().getDatabaseFile(tableId);
+        DbFile bTreeFile = Database.getCatalog().getDatabaseFile(tableId);
         ArrayList<Page> dirtyPages = bTreeFile.deleteTuple(tid, t);
         for (Page page : dirtyPages) {
             page.markDirty(true, tid);
