@@ -77,20 +77,21 @@ public class BufferPool {
         throws TransactionAbortedException, DbException {
         // some code goes here
         if (bufferContents.containsKey(pid)) {
-            pageUseTime.replace(pid, pageUseTime.get(pid) + 1);
+            if (!pageUseTime.containsKey(pid)) pageUseTime.put(pid, 1);
+            else pageUseTime.replace(pid, pageUseTime.get(pid) + 1);
             return bufferContents.get(pid);
         } else {
-            DbFile hf = Database.getCatalog().getDatabaseFile(pid.getTableId());
-            Page newPage = hf.readPage(pid);
-            bufferContents.put(pid, newPage);
-            pageUseTime.put(pid, 1);
-            if (bufferContents.size() == maxPageNum + 1) {
+            if (bufferContents.size() == maxPageNum) {
                 try {
                     evictPage();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
+            DbFile hf = Database.getCatalog().getDatabaseFile(pid.getTableId());
+            Page newPage = hf.readPage(pid);
+            bufferContents.put(pid, newPage);
+            pageUseTime.put(pid, 1);
             return newPage;
         }
     }
@@ -160,7 +161,10 @@ public class BufferPool {
         ArrayList<Page> dirtyPages = bTreeFile.insertTuple(tid, t);
         for (Page page : dirtyPages) {
             page.markDirty(true, tid);
-            bufferContents.replace(page.getId(), page);
+            if (!bufferContents.containsKey(page.getId())) {
+                bufferContents.put(page.getId(), page);
+            }
+            else bufferContents.replace(page.getId(), page);
         }
     }
 
@@ -223,7 +227,7 @@ public class BufferPool {
         TransactionId lastTransaction = dirtyPage.isDirty();
         if (lastTransaction != null) {
             dirtyPage.markDirty(false, lastTransaction);
-
+            Database.getCatalog().getDatabaseFile(pid.getTableId()).writePage(dirtyPage);
         }
     }
 

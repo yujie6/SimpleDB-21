@@ -10,6 +10,7 @@ public class HeapFileIterator implements DbFileIterator {
     private TransactionId tid;
     private int curPageId;
     private boolean closed;
+    private Tuple next;
     public HeapFileIterator(HeapFile hf, TransactionId tid) {
         this.heapFile = hf;
         this.tid = tid;
@@ -31,23 +32,26 @@ public class HeapFileIterator implements DbFileIterator {
 
     @Override
     public boolean hasNext() throws DbException, TransactionAbortedException {
-        if (closed) return false;
-        if (iterator.hasNext()) return true;
-        else return curPageId < heapFile.numPages() - 1;
+        if (closed)
+            return false;
+
+        if (next == null)
+            next = fetchNext();
+        return next != null;
     }
 
-    @Override
-    public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+    public Tuple fetchNext() throws DbException {
         if (closed) {
-            throw new NoSuchElementException();
+            return null;
         }
-        if (iterator.hasNext()) return iterator.next();
-        else {
+        if (iterator.hasNext()) {
+            return iterator.next();
+        }
+        while (true) {
             curPageId++;
             if (curPageId >= heapFile.numPages()) {
-                throw new NoSuchElementException();
+                return null;
             }
-            // System.out.println(curPageId + "<read new page>, " + heapFile.numPages());
             HeapPageId pid = new HeapPageId(heapFile.getId(), curPageId);
             try {
                 heapPage = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
@@ -55,8 +59,26 @@ public class HeapFileIterator implements DbFileIterator {
                 e.printStackTrace();
             }
             iterator = heapPage.iterator();
-            return iterator.next();
+            if (iterator.hasNext()) {
+                return iterator.next();
+            }
         }
+    }
+
+    @Override
+    public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+        if (closed) throw new NoSuchElementException();
+        if (next == null) {
+            next = fetchNext();
+            if (next == null) {
+                throw new NoSuchElementException();
+            }
+        }
+
+        Tuple result = next;
+        next = null;
+        return result;
+
     }
 
     @Override

@@ -2,6 +2,7 @@ package simpledb;
 
 import javax.xml.crypto.Data;
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * The delete operator. Delete reads tuples from its child operator and removes
@@ -60,8 +61,12 @@ public class Delete extends Operator {
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         if (invalid) return null;
         int count = 0;
+        ArrayList<Tuple> deleteTuples = new ArrayList<>();
         while (child.hasNext()) {
             Tuple tuple = child.next();
+            deleteTuples.add(tuple);
+        }
+        for (Tuple tuple : deleteTuples) {
             try {
                 Database.getBufferPool().deleteTuple(tid, tuple);
                 count ++ ;

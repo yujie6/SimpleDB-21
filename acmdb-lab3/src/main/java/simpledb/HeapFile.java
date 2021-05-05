@@ -91,7 +91,6 @@ public class HeapFile implements DbFile {
                 dirtyPages.add(tmpPage);
                 return dirtyPages;
             } catch (DbException e) {
-                e.printStackTrace();
             }
         }
         HeapPage newPage = new HeapPage(new HeapPageId(getId(), pageNum), HeapPage.createEmptyPageData());
