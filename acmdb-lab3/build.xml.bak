@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="simpledb" default="dist" basedir=".">
-    <property name="src" location="src"/>
+    <property name="src" location="src/main"/>
     <property name="testd" location="test"/>
 
     <property name="build" location="bin"/>
@@ -70,7 +70,7 @@
 
     <taskdef resource="net/sf/antcontrib/antlib.xml">
         <classpath>
-				<pathelement location="${lib}/ant-contrib-1.0b3.jar"/>
+            <pathelement location="lib/ant-contrib-1.0b3.jar"/>
         </classpath>
     </taskdef>
 
@@ -95,7 +95,7 @@
 &lt;/projectDescription&gt;</echo>
         <echo file=".classpath" append="false">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
 &lt;classpath&gt;
-    &lt;classpathentry kind=&quot;src&quot; output=&quot;bin/src&quot; path=&quot;src/java&quot;/&gt;
+    &lt;classpathentry kind=&quot;src&quot; output=&quot;bin/src&quot; path=&quot;src/main/java&quot;/&gt;
     &lt;classpathentry kind=&quot;src&quot; output=&quot;bin/test&quot; path=&quot;test&quot;/&gt;
     &lt;classpathentry kind=&quot;con&quot; path=&quot;org.eclipse.jdt.launching.JRE_CONTAINER&quot;/&gt;
     &lt;classpathentry kind=&quot;output&quot; path=&quot;bin/src&quot;/&gt;
@@ -179,7 +179,7 @@
     <target name="javadocs" description="Build javadoc documentation">
         <javadoc destdir="${doc}" access="private" failonerror="true" source="${sourceversion}" additionalparam="-Xdoclint:none">
             <classpath refid="classpath.base" />
-            <fileset dir="src/java" defaultexcludes="yes">
+            <fileset dir="src/main/java" defaultexcludes="yes">
                 <include name="simpledb/**/*.java"/>
             </fileset>
         </javadoc>
