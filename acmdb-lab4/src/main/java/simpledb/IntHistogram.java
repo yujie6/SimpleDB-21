@@ -35,13 +35,17 @@ public class IntHistogram {
         }
     }
 
-    private int buckets, min, max, bucketNum, bucketWidth, total;
+    private int buckets, bucketNum, bucketWidth, total;
+    public int min, max;
     private Bucket[] histogram;
-    public IntHistogram(int buckets, int min, int max) {
+    public IntHistogram(int buckets) {
         this.buckets = buckets;
-        this.min = min;
-        this.max = max;
+        this.min = Integer.MAX_VALUE;
+        this.max = Integer.MIN_VALUE;
         this.total = 0;
+    }
+
+    public void build() {
         bucketNum = Math.min(max - min + 1, buckets);
         bucketWidth = (max - min + 1) / bucketNum;
         this.histogram = new Bucket[bucketNum];
@@ -49,6 +53,14 @@ public class IntHistogram {
             if (i == bucketNum - 1) histogram[i] = new Bucket(min + bucketWidth * i, max);
             else histogram[i] = new Bucket(min + bucketWidth * i, min + bucketWidth * (i+1) - 1);
         }
+    }
+
+    public IntHistogram(int buckets, int min, int max) {
+        this.buckets = buckets;
+        this.min = min;
+        this.max = max;
+        this.total = 0;
+        build();
     }
 
     /**
@@ -72,7 +84,6 @@ public class IntHistogram {
      * @return Predicted selectivity of this particular operator and value
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
-        double t = 0;
         // optim: v < min or v > max,
         if (v < min) {
             switch (op) {
@@ -81,6 +92,7 @@ public class IntHistogram {
                 case EQUALS: {
                     return 0.0;
                 }
+                case NOT_EQUALS:
                 case GREATER_THAN:
                 case GREATER_THAN_OR_EQ: {
                     return 1.0;
@@ -94,6 +106,7 @@ public class IntHistogram {
                 case EQUALS: {
                     return 0.0;
                 }
+                case NOT_EQUALS:
                 case LESS_THAN:
                 case LESS_THAN_OR_EQ: {
                     return 1.0;
@@ -102,45 +115,46 @@ public class IntHistogram {
         }
         int index = Math.min((v - min) / bucketWidth, bucketNum - 1);
         Bucket b = histogram[index];
+        double t = 0.0;
         switch (op) {
             case EQUALS: {
-                t = b.num / (b.getSize() + 0.0);
-                break;
+                t = (double)b.num / (double)(b.right - b.left + 1) / total;
+                return t;
             }
             case LESS_THAN: {
                 for (int i = 0; i < index; i++) {
-                    t += histogram[i].num;
+                    t += histogram[i].num / (double) total;
                 }
-                t += (double) b.num * (v - b.left) / b.getSize();
+                t += (double) b.num * (v - b.left) / b.getSize() / (double) total;
                 break;
             }
             case GREATER_THAN: {
                 for (int i = bucketNum - 1; i > index; i--) {
-                    t += histogram[i].num;
+                    t += histogram[i].num / (double) total;
                 }
-                t += (double) b.num * (b.right - v) / b.getSize();
+                t += (double) b.num * (b.right - v) / b.getSize() / (double) total;
                 break;
             }
             case NOT_EQUALS: {
-                t = total - b.num / (b.getSize() + 0.0);
+                t = 1.0 - b.num / (b.getSize() + 0.0) / (double) total;
                 break;
             }
             case LESS_THAN_OR_EQ: {
                 for (int i = 0; i < index; i++) {
-                    t += histogram[i].num;
+                    t += histogram[i].num / (double) total;
                 }
-                t += (double) b.num * (v - b.left + 1) / b.getSize();
+                t += (double) b.num * (v - b.left + 1) / b.getSize() / (double)total;
                 break;
             }
             case GREATER_THAN_OR_EQ: {
                 for (int i = bucketNum - 1; i > index; i--) {
-                    t += histogram[i].num;
+                    t += histogram[i].num / (double)total;
                 }
-                t += (double) b.num * (b.right - v + 1) / b.getSize();
+                t += (double) b.num * (b.right - v + 1) / b.getSize() / (double)total;
                 break;
             }
         }
-        return t / (double)total;
+        return t;
     }
 
     /**
