@@ -15,19 +15,20 @@ public class HeapFileIterator implements DbFileIterator {
         this.heapFile = hf;
         this.tid = tid;
         this.curPageId = 0;
-        HeapPageId pid = new HeapPageId(hf.getId(), curPageId);
-        try {
-            heapPage = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
-        } catch (TransactionAbortedException | DbException e) {
-            e.printStackTrace();
-        }
-        iterator = heapPage.iterator();
         closed = true;
     }
 
     @Override
     public void open() throws DbException, TransactionAbortedException {
         closed = false;
+        curPageId = 0;
+        HeapPageId pid = new HeapPageId(heapFile.getId(), curPageId);
+        try {
+            heapPage = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_ONLY);
+        } catch (TransactionAbortedException | DbException e) {
+            e.printStackTrace();
+        }
+        iterator = heapPage.iterator();
     }
 
     @Override
@@ -83,13 +84,7 @@ public class HeapFileIterator implements DbFileIterator {
 
     @Override
     public void rewind() throws DbException, TransactionAbortedException {
-        HeapPageId pid = new HeapPageId(heapFile.getId(), 0);
-        try {
-            heapPage = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE);
-        } catch (TransactionAbortedException | DbException e) {
-            e.printStackTrace();
-        }
-        iterator = heapPage.iterator();
+        open();
     }
 
     @Override

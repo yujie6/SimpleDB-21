@@ -82,7 +82,6 @@ public class Query implements Serializable {
             TransactionAbortedException {
         if (!started)
             throw new DbException("Database not started.");
-
         return op.next();
     }
 
@@ -94,7 +93,6 @@ public class Query implements Serializable {
 
     public void execute() throws IOException, DbException, TransactionAbortedException {
         TupleDesc td = this.getOutputTupleDesc();
-
         String names = "";
         for (int i = 0; i < td.numFields(); i++) {
             names += td.getFieldName(i) + "\t";
@@ -104,7 +102,6 @@ public class Query implements Serializable {
             System.out.print("-");
         }
         System.out.println("");
-
         this.start();
         int cnt = 0;
         while (this.hasNext()) {

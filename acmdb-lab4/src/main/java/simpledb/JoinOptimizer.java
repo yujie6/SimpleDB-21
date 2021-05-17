@@ -13,7 +13,7 @@ import javax.swing.tree.*;
 public class JoinOptimizer {
     LogicalPlan p;
     Vector<LogicalJoinNode> joins;
-
+    PlanCache planCache;
     /**
      * Constructor
      * 
@@ -25,6 +25,7 @@ public class JoinOptimizer {
     public JoinOptimizer(LogicalPlan p, Vector<LogicalJoinNode> joins) {
         this.p = p;
         this.joins = joins;
+        this.planCache = new PlanCache();
     }
 
     /**
@@ -111,7 +112,11 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            if (j.p == Predicate.Op.EQUALS) {
+                return cost1 + cost2 + card1 * card2;
+            } else {
+                return cost1 + cost1 * card2 + card1 * card2;
+            }
         }
     }
 
@@ -157,7 +162,29 @@ public class JoinOptimizer {
             Map<String, Integer> tableAliasToId) {
         int card = 1;
         // some code goes here
-        return card <= 0 ? 1 : card;
+        if (joinOp == Predicate.Op.EQUALS) {
+            if (!t1pkey && !t2pkey) {
+                return Math.max(card1, card2);
+            } else if (t1pkey && t2pkey) {
+                return Math.min(card1, card2);
+            } else if (t1pkey) {
+                return card2;
+            } else if (t2pkey) {
+                return card1;
+            }
+        } else if (joinOp == Predicate.Op.NOT_EQUALS) {
+            if (!t1pkey && !t2pkey) {
+                return card1 * card2 - Math.max(card1, card2);
+            } else if (t1pkey && t2pkey) {
+                return card1 * card2 - Math.min(card1, card2);
+            } else if (t1pkey) {
+                return card1 * card2 - card2;
+            } else if (t2pkey) {
+                return card1 * card2 - card1;
+            }
+
+        }
+        return (int)(card1 * card2 * 0.3);
     }
 
     /**
@@ -217,11 +244,25 @@ public class JoinOptimizer {
             HashMap<String, TableStats> stats,
             HashMap<String, Double> filterSelectivities, boolean explain)
             throws ParsingException {
-        //Not necessary for labs 1--3
-
-        // some code goes here
-        //Replace the following
-        return joins;
+        HashSet<LogicalJoinNode> t = new HashSet<>(joins);
+        for (int joinSize = 1; joinSize <= joins.size(); joinSize++) {
+            for (Set<LogicalJoinNode> subset : enumerateSubsets(joins, joinSize)) {
+                Vector<LogicalJoinNode> bestplan = null;
+                double bestCost = Double.MAX_VALUE;
+                int card = 0;
+                for (LogicalJoinNode joinNode : subset) {
+                    CostCard card1 = computeCostAndCardOfSubplan(stats, filterSelectivities, joinNode, subset, bestCost, planCache);
+                    if (card1 == null) continue;
+                    if (card1.cost < bestCost) {
+                        bestCost = card1.cost;
+                        bestplan = card1.plan;
+                        card = card1.card;
+                    }
+                }
+                planCache.addPlan(subset, bestCost, card, bestplan);
+            }
+        }
+        return planCache.getOrder(t);
     }
 
     // ===================== Private Methods =================================

@@ -12,21 +12,22 @@ public class Join extends Operator {
     private DbIterator child1, child2;
     private Tuple t1, t2;
     private TupleDesc mergedTD;
+    private ArrayList<Tuple> joinedArray;
+    private Iterator<Tuple> joinedIterator;
+
     /**
      * Constructor. Accepts to children to join and the predicate to join them
      * on
-     * 
-     * @param p
-     *            The predicate to use to join the children
-     * @param child1
-     *            Iterator for the left(outer) relation to join
-     * @param child2
-     *            Iterator for the right(inner) relation to join
+     *
+     * @param p      The predicate to use to join the children
+     * @param child1 Iterator for the left(outer) relation to join
+     * @param child2 Iterator for the right(inner) relation to join
      */
     public Join(JoinPredicate p, DbIterator child1, DbIterator child2) {
         this.jp = p;
         this.child1 = child1;
         this.child2 = child2;
+        this.joinedArray = new ArrayList<>();
         this.mergedTD = TupleDesc.merge(child1.getTupleDesc(), child2.getTupleDesc());
     }
 
@@ -35,26 +36,24 @@ public class Join extends Operator {
     }
 
     /**
-     * @return
-     *       the field name of join field1. Should be quantified by
-     *       alias or table name.
-     * */
+     * @return the field name of join field1. Should be quantified by
+     * alias or table name.
+     */
     public String getJoinField1Name() {
         return child1.getTupleDesc().getFieldName(jp.getField1());
     }
 
     /**
-     * @return
-     *       the field name of join field2. Should be quantified by
-     *       alias or table name.
-     * */
+     * @return the field name of join field2. Should be quantified by
+     * alias or table name.
+     */
     public String getJoinField2Name() {
         return child2.getTupleDesc().getFieldName(jp.getField2());
     }
 
     /**
      * @see simpledb.TupleDesc#merge(TupleDesc, TupleDesc) for possible
-     *      implementation logic.
+     * implementation logic.
      */
     public TupleDesc getTupleDesc() {
         return mergedTD;
@@ -65,17 +64,36 @@ public class Join extends Operator {
         super.open();
         child1.open();
         child2.open();
+        this.joinedArray.clear();
+        int lenLeftTuple = child1.getTupleDesc().numFields();
+        int lenRightTuple = child2.getTupleDesc().numFields();
+        while (child1.hasNext()) {
+            Tuple tmpLeft = child1.next();
+            child2.rewind();
+            while (child2.hasNext()) {
+                Tuple tmpRight = child2.next();
+                if (this.jp.filter(tmpLeft, tmpRight)) {
+                    Tuple joinedTuple = new Tuple(this.mergedTD);
+                    for (int i = 0; i < lenLeftTuple; i++) {
+                        joinedTuple.setField(i, tmpLeft.getField(i));
+                    }
+                    for (int i = 0; i < lenRightTuple; i++) {
+                        joinedTuple.setField(i + lenLeftTuple, tmpRight.getField(i));
+                    }
+                    this.joinedArray.add(joinedTuple);
+                }
+            }
+        }
+        this.joinedIterator = this.joinedArray.iterator();
     }
 
     public void close() {
+        this.joinedArray.clear();
         super.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        child1.rewind();
-        child2.rewind();
-        t1 = null;
-        t2 = null;
+        this.joinedIterator = joinedArray.iterator();
     }
 
     /**
@@ -92,40 +110,27 @@ public class Join extends Operator {
      * <p>
      * For example, if one tuple is {1,2,3} and the other tuple is {1,5,6},
      * joined on equality of the first column, then this returns {1,2,3,1,5,6}.
-     * 
+     *
      * @return The next matching tuple.
      * @see JoinPredicate#filter
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        if (t1 == null && t2 == null) {
-            t1 = child1.next();
-            t2 = child2.next();
-            if (jp.filter(t1, t2)) return Tuple.merge(mergedTD, t1, t2);
+        if (joinedIterator.hasNext()) {
+            return joinedIterator.next();
         }
-        while (true) {
-            if (child2.hasNext()) {
-                t2 = child2.next();
-                if (jp.filter(t1, t2)) return Tuple.merge(mergedTD, t1, t2);
-            } else {
-                if (child1.hasNext()) {
-                    t1 = child1.next();
-                    child2.rewind();
-                    t2 = child2.next();
-                    if (jp.filter(t1, t2)) return Tuple.merge(mergedTD, t1, t2);
-                } else return null;
-            }
-        }
+        return null;
     }
 
     @Override
     public DbIterator[] getChildren() {
         // some code goes here
-        return null;
+        return new DbIterator[]{child1, child2};
     }
 
     @Override
     public void setChildren(DbIterator[] children) {
-        // some code goes here
+        child1 = children[0];
+        child2 = children[1];
     }
 
 }

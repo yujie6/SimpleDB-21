@@ -48,7 +48,10 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
         try {
-            if (pid.pageNumber() >= numPages()) throw new DbException("Read page invalid!");
+            if (pid.pageNumber() >= numPages()) {
+                System.out.println(pid.pageNumber() + " AND " + numPages());
+                throw new DbException("Read page invalid!");
+            }
             FileInputStream in = new FileInputStream(f);
             in.skip(pid.pageNumber() * BufferPool.getPageSize());
             byte[] data = new byte[BufferPool.getPageSize() + 23];

@@ -14,6 +14,7 @@ public class SeqScan implements DbIterator {
     private String tableAlias;
     private int tableId;
     private HeapFile hf;
+    private TransactionId tid;
     private DbFileIterator iterator;
     /**
      * Creates a sequential scan over the specified table as a part of the
@@ -34,6 +35,7 @@ public class SeqScan implements DbIterator {
     public SeqScan(TransactionId tid, int tableid, String tableAlias) {
         this.tableAlias = tableAlias;
         this.tableId = tableid;
+        this.tid = tid;
         hf = (HeapFile) Database.getCatalog().getDatabaseFile(tableid);
         iterator = hf.iterator(tid);
     }
