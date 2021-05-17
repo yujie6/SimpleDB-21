@@ -175,9 +175,10 @@ public class IntHistogram {
      * @return A string describing this histogram, for debugging purposes
      */
     public String toString() {
-        StringBuilder sb = new StringBuilder("Histogram of size").append(bucketNum);
-        sb.append("with min,max to be ").append(min).append(", ").append(max);
-        sb.append(", width to be ").append(bucketWidth);
+        StringBuilder sb = new StringBuilder("Histogram of size: ").append(bucketNum);
+        sb.append("; \n with min,max to be ").append(min).append(", ").append(max);
+        sb.append("; \n width to be ").append(bucketWidth);
+        sb.append("; \n total to be ").append(total).append("\n");
         for (int i = 0; i < bucketNum; i++) {
             sb.append("Bucket ").append(i).append(" has num ").append(histogram[i].num).append("\n");
         }

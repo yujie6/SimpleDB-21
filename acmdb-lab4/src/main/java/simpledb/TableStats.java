@@ -126,7 +126,8 @@ public class TableStats {
 
             // Second scan,  selecting out all of fields of all of the
             // tuples and using them to populate the counts of the buckets in each histogram
-            iterator.rewind();
+            iterator = table.iterator(new TransactionId());
+            iterator.open();
             while (iterator.hasNext()) {
                 Tuple tuple = iterator.next();
                 for (int i = 0; i < td.numFields(); i ++) {
@@ -190,6 +191,17 @@ public class TableStats {
         return 1.0;
     }
 
+    public String toString(int field) {
+        if (td.getFieldType(field) == Type.INT_TYPE) {
+            IntHistogram ih = (IntHistogram) histogramMap.get(field);
+            return ih.toString();
+        } else if (td.getFieldType(field) == Type.STRING_TYPE) {
+            StringHistogram sh = (StringHistogram) histogramMap.get(field);
+            return sh.toString();
+        }
+        return "";
+    }
+
     /**
      * Estimate the selectivity of predicate <tt>field op constant</tt> on the
      * table.
@@ -203,6 +215,9 @@ public class TableStats {
      * @return The estimated selectivity (fraction of tuples that satisfy) the
      *         predicate
      */
+
+
+
     public double estimateSelectivity(int field, Predicate.Op op, Field constant) {
         if (td.getFieldType(field) == Type.INT_TYPE) {
             IntHistogram ih = (IntHistogram) histogramMap.get(field);

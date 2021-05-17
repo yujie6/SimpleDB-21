@@ -882,6 +882,7 @@ public class BTreeFile implements DbFile {
                 rightPage.iterator().next().getLeftChild());
         leftPage.insertEntry(middleEntry);
         leftPage.updateEntry(middleEntry);
+        // make sure entry1.right = entry2.left
         while (mergeIterator.hasNext()) {
             BTreeEntry mergedEntry = mergeIterator.next();
             rightPage.deleteKeyAndLeftChild(mergedEntry);
