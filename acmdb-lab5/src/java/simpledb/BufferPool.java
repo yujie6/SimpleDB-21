@@ -178,12 +178,13 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         DbFile bTreeFile = Database.getCatalog().getDatabaseFile(tableId);
         ArrayList<Page> dirtyPages = bTreeFile.insertTuple(tid, t);
-        for (Page page : dirtyPages) {
-            page.markDirty(true, tid);
-            if (!bufferContents.containsKey(page.getId())) {
-                bufferContents.put(page.getId(), page);
+        synchronized (this) {
+            for (Page page : dirtyPages) {
+                page.markDirty(true, tid);
+                if (!bufferContents.containsKey(page.getId())) {
+                    bufferContents.put(page.getId(), page);
+                } else bufferContents.replace(page.getId(), page);
             }
-            else bufferContents.replace(page.getId(), page);
         }
     }
 
@@ -205,9 +206,11 @@ public class BufferPool {
         int tableId = t.getRecordId().getPageId().getTableId();
         DbFile bTreeFile = Database.getCatalog().getDatabaseFile(tableId);
         ArrayList<Page> dirtyPages = bTreeFile.deleteTuple(tid, t);
-        for (Page page : dirtyPages) {
-            page.markDirty(true, tid);
-            bufferContents.replace(page.getId(), page);
+        synchronized (this) {
+            for (Page page : dirtyPages) {
+                page.markDirty(true, tid);
+                bufferContents.replace(page.getId(), page);
+            }
         }
     }
 

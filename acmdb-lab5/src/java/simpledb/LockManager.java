@@ -1,9 +1,6 @@
 package simpledb;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class LockManager {
     private HashMap<TransactionId, Set<Lock>> tidLockMap;
@@ -11,7 +8,7 @@ public class LockManager {
 
     public static final int RUNTIME_LIMIT = 500;
     public static final int WAIT_TIME = 50;
-
+    public static final Random r = new Random();
     public LockManager() {
         this.tidLockMap = new HashMap<>();
         this.pidLockMap = new HashMap<>();
@@ -33,7 +30,7 @@ public class LockManager {
                     lock.setShared(true);
                     break;
                 }
-                if (System.currentTimeMillis() - startTime > RUNTIME_LIMIT) {
+                if (System.currentTimeMillis() - startTime > RUNTIME_LIMIT + r.nextInt(500)) {
                     throw new TransactionAbortedException();
                 }
                 try {
@@ -54,7 +51,7 @@ public class LockManager {
                         break;
                     }
                 }
-                if (System.currentTimeMillis() - startTime > RUNTIME_LIMIT) {
+                if (System.currentTimeMillis() - startTime > RUNTIME_LIMIT + r.nextInt(500)) {
                     throw new TransactionAbortedException();
                 }
                 try {

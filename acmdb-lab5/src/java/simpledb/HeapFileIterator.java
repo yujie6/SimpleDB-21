@@ -23,11 +23,7 @@ public class HeapFileIterator implements DbFileIterator {
         closed = false;
         curPageId = 0;
         HeapPageId pid = new HeapPageId(heapFile.getId(), curPageId);
-        try {
-            heapPage = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_ONLY);
-        } catch (TransactionAbortedException | DbException e) {
-            e.printStackTrace();
-        }
+        heapPage = (HeapPage) Database.getBufferPool().getPage(tid, pid, Permissions.READ_ONLY);
         iterator = heapPage.iterator();
     }
 

@@ -25,6 +25,7 @@ public class TransactionTest extends SimpleDbTestBase {
     private void validateTransactions(int threads)
             throws DbException, TransactionAbortedException, IOException {
         // Create a table with a single integer value = 0
+        System.out.println("Testing " + threads );
         HashMap<Integer, Integer> columnSpecification = new HashMap<Integer, Integer>();
         columnSpecification.put(0, 0);
         DbFile table = SystemTestUtil.createRandomHeapFile(1, 1, columnSpecification, null);

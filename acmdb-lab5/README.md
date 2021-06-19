@@ -4,6 +4,8 @@
 keep tracks of tid & pid related to a lock.
 * LockManager.java: a collection of methods that
 maintain the states of all exclusive and shared locks.
+* How to avoid dead lock: use wait-time-out method
+
 
 ## API Changes
 Nope
@@ -12,7 +14,7 @@ Nope
 Nope
 
 ## How long I spent
-I spent about 2 days (3 hours per day), and 
+I spent about 3 days (3 hours per day), and 
 found the debugging progress quite annoying, since
 the test cases are complex and not straight forward.
 I cannot get any useful information from a 
